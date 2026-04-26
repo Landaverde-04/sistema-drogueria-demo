@@ -1,0 +1,1 @@
+// JS compartido del sistema

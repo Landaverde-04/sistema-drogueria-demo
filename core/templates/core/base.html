@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    {# Bloque de titulo: cada pagina pone su propio titulo. Si no lo define, muestra este por defecto #}
+    <title>{% block titulo %}Sistema Drogueria{% endblock %}</title>
+
+    {% load static %}
+
+    {# Hoja de estilos principal compartida por todo el sistema #}
+    <link rel="stylesheet" href="{% static 'core/css/estilos.css' %}">
+
+    {# Bloque para que cada pagina pueda agregar su propio CSS sin tocar este archivo #}
+    {% block estilos_extra %}{% endblock %}
+</head>
+<body>
+
+    {# Navbar: se carga desde un archivo separado para no ensuciar este #}
+    {% include "core/navbar.html" %}
+
+    <main>
+        {# Mensajes flash: notificaciones temporales que Django muestra una sola vez (exito, error, etc.) #}
+        {% if messages %}
+            <div class="mensajes">
+                {% for message in messages %}
+                    <div class="mensaje mensaje-{{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {# Bloque de contenido: aqui cada pagina inyecta su contenido unico #}
+        {% block contenido %}{% endblock %}
+    </main>
+
+    {# Footer: igual que el navbar, separado para mantener esto limpio #}
+    {% include "core/footer.html" %}
+
+    {# Script JS principal compartido #}
+    <script src="{% static 'core/js/main.js' %}"></script>
+
+    {# Bloque para que cada pagina pueda agregar su propio JS al final del body #}
+    {% block scripts_extra %}{% endblock %}
+
+</body>
+</html>

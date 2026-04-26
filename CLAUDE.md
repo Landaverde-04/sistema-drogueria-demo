@@ -18,7 +18,7 @@ Fuera de alcance: scanner de código de barras, reportes complejos, alertas auto
 | Componente | Elección |
 |------------|----------|
 | Lenguaje | Python 3.12 |
-| Framework | Django (última versión estable) |
+| Framework | Django 6.x (última versión estable) |
 | Frontend | Templates nativos de Django + JavaScript vanilla |
 | Base de datos | SQLite |
 | Entorno virtual | venv |
@@ -40,12 +40,11 @@ sistema_drogueria/        ← proyecto Django (configuración)
 
 ### App `core`
 Base técnica del sistema. Contiene:
-- Plantilla `base.html` que todas las páginas heredan
-- Modelos abstractos (`ModeloBase` con campos comunes: `fecha_creacion`, `fecha_modificacion`, `activo`)
-- Vistas y URLs comunes (home, dashboard, 404)
-- Templates compartidos (`_navbar.html`, `_footer.html`)
-- Archivos estáticos base (CSS principal, JS común)
-- Utilidades y helpers usados por varias apps
+- `base.html` que todas las páginas heredan con `{% extends "core/base.html" %}`
+- `ModeloBase` — modelo abstracto con `fecha_creacion`, `fecha_modificacion`, `activo`
+- Vista y URL del home
+- Parciales `navbar.html` y `footer.html`
+- Archivos estáticos base: `estilos.css` y `main.js`
 
 ### App `seguridad`
 Gestión de acceso al sistema:
@@ -123,7 +122,7 @@ El namespace dentro de `templates/` y `static/` es **obligatorio** para evitar c
 ### Templates
 
 - Archivos: `snake_case.html`
-- Parciales (fragmentos) llevan guion bajo al inicio: `_navbar.html`, `_footer.html`
+- Parciales (fragmentos incluidos con `{% include %}`) **sin guion bajo** al inicio: `navbar.html`, `footer.html`
 - Indentación: 4 espacios
 - Bloques con nombre claro: `{% block contenido %}` no `{% block c %}`
 
@@ -134,6 +133,7 @@ El namespace dentro de `templates/` y `static/` es **obligatorio** para evitar c
 - Plurales para listados: `/productos/`
 - Singulares con ID para detalle: `/producto/<id>/`
 - Acciones explícitas: `/producto/<id>/editar/`, `/producto/<id>/eliminar/`
+- Cada app define su propio `urls.py` con `app_name` para namespace
 
 ### Mensajes de commit
 
@@ -148,24 +148,25 @@ Ejemplos:
 
 ## ✅ Estado del proyecto
 
-**Fase actual**: setup inicial del proyecto.
+**Fase actual**: creación de apps.
 
 Completado:
 - [x] Decisiones técnicas tomadas (stack, idioma, arquitectura)
 - [x] Documentación en Notion creada
 - [x] `CLAUDE.md` redactado
+- [x] Estructura del proyecto Django creada (`startproject`)
+- [x] Variables de entorno configuradas (`.env`, `.env.example`, `.gitignore`)
+- [x] `settings.py` configurado con django-environ, idioma español, zona horaria El Salvador
+- [x] `README.md` creado
+- [x] Primer commit y push a GitHub
+- [x] App `core` creada con `ModeloBase`, `base.html`, `navbar.html`, `footer.html`, home
 
 Pendiente inmediato:
-- [ ] Crear estructura del proyecto Django
-- [ ] Configurar variables de entorno
-- [ ] Primer commit y push a GitHub
-- [ ] Crear las 3 apps (`core`, `seguridad`, `inventario`)
+- [ ] Crear app `seguridad`
+- [ ] Crear app `inventario`
 
 Pendiente de mediano plazo:
 - [ ] Definir librería de UI/CSS (Bootstrap, Tailwind o custom)
-- [ ] Definir sistema de formularios
-- [ ] Implementar `base.html` en `core`
-- [ ] Implementar `ModeloBase` en `core`
 - [ ] Implementar autenticación en `seguridad`
 - [ ] Implementar CRUD en `inventario`
 
@@ -241,6 +242,15 @@ Esta sección documenta decisiones ya tomadas con su justificación. **No las co
 
 **Cualquier modelo nuevo debe heredar de `ModeloBase`.**
 
+```python
+# Ejemplo de uso en otra app:
+from core.models import ModeloBase
+
+class Producto(ModeloBase):
+    nombre = models.CharField(max_length=200)
+    precio = models.DecimalField(max_digits=10, decimal_places=2)
+```
+
 ### Herencia de templates desde `core/base.html`
 
 **Decisión**: existe un `base.html` en la app `core` que define la estructura HTML común. Todas las páginas heredan de él con `{% extends "core/base.html" %}`.
@@ -251,6 +261,18 @@ Esta sección documenta decisiones ya tomadas con su justificación. **No las co
 - Cada página solo se preocupa por su contenido
 
 **No crear páginas HTML completas sin extender de `base.html`.**
+
+### Parciales sin guion bajo
+
+**Decisión**: los archivos parciales (fragmentos incluidos con `{% include %}`) no llevan guion bajo al inicio.
+
+**Por qué**: preferencia del equipo por nombres limpios. `navbar.html` en lugar de `_navbar.html`.
+
+### Namespace en URLs con `app_name`
+
+**Decisión**: cada `urls.py` de app define `app_name` para usar namespaces en los `{% url %}`.
+
+**Por qué**: evita colisiones de nombres entre apps. Se referencia como `{% url 'core:home' %}`, `{% url 'inventario:lista_productos' %}`, etc.
 
 ## 🚫 Lo que Claude NO debe hacer
 
@@ -264,6 +286,7 @@ Esta sección documenta decisiones ya tomadas con su justificación. **No las co
 - **No reescribir código existente** "para que esté mejor" sin que se pida
 - **No asumir que algo está instalado** — siempre verificar con el usuario primero
 - **No saltarse pasos en explicaciones**: el equipo aprende, así que cada cambio importante debe explicarse
+- **No usar guion bajo** en nombres de archivos HTML/CSS/JS parciales
 
 ## 📚 Documentación adicional
 

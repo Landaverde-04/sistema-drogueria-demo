@@ -148,7 +148,7 @@ Ejemplos:
 
 ## ✅ Estado del proyecto
 
-**Fase actual**: creación de apps.
+**Fase actual**: módulo `seguridad` en progreso.
 
 Completado:
 - [x] Decisiones técnicas tomadas (stack, idioma, arquitectura)
@@ -159,16 +159,23 @@ Completado:
 - [x] `settings.py` configurado con django-environ, idioma español, zona horaria El Salvador
 - [x] `README.md` creado
 - [x] Primer commit y push a GitHub
-- [x] App `core` creada con `ModeloBase`, `base.html`, `navbar.html`, `footer.html`, home
+- [x] App `core` creada con `ModeloBase`, `base.html`, `sidebar.html`, home
+- [x] Definir librería de UI/CSS → **Bootstrap 5 + Bootstrap Icons vía CDN**
+- [x] Layout de dashboard con sidebar lateral (reemplaza navbar top)
+- [x] Footer eliminado (sistema de control interno)
+- [x] App `seguridad` creada y registrada
+- [x] Modelo `Usuario` con `AbstractUser` + `AUTH_USER_MODEL` configurado
+- [x] Login y logout implementados
+- [x] CRUD de usuarios completo (lista, crear, editar, eliminar)
 
 Pendiente inmediato:
-- [ ] Crear app `seguridad`
+- [ ] CRUD de roles (`Group` de Django)
+- [ ] Cambio de contraseña
 - [ ] Crear app `inventario`
 
 Pendiente de mediano plazo:
-- [ ] Definir librería de UI/CSS (Bootstrap, Tailwind o custom)
-- [ ] Implementar autenticación en `seguridad`
-- [ ] Implementar CRUD en `inventario`
+- [ ] Implementar CRUD en `inventario` (productos y categorías)
+- [ ] Control de permisos por rol en las vistas
 
 ## ⚠️ Decisiones técnicas importantes
 
@@ -287,6 +294,49 @@ class Producto(ModeloBase):
 - **No asumir que algo está instalado** — siempre verificar con el usuario primero
 - **No saltarse pasos en explicaciones**: el equipo aprende, así que cada cambio importante debe explicarse
 - **No usar guion bajo** en nombres de archivos HTML/CSS/JS parciales
+
+### Bootstrap 5 + Bootstrap Icons vía CDN, NO instalación de paquete
+
+**Decisión**: usar Bootstrap 5 y Bootstrap Icons cargados desde CDN en `base.html`.
+
+**Por qué**:
+- Cero dependencias extra en `requirements.txt`
+- Sin paso de compilación ni configuración adicional
+- Suficiente para una demo funcional
+- Para producción en red interna sin internet: descargar los archivos y servirlos como estáticos
+
+**No instalar `django-bootstrap5` ni ningún paquete de UI** sin que el equipo lo decida.
+
+### Layout de dashboard con sidebar lateral
+
+**Decisión**: la navegación principal va en un sidebar lateral izquierdo (`core/templates/core/sidebar.html`), no en una barra superior. No hay footer.
+
+**Por qué**:
+- Patrón estándar de sistemas de gestión internos
+- El footer no aplica para un sistema de control interno
+- El sidebar tiene secciones por módulo (Seguridad, Inventario) con íconos de Bootstrap Icons
+
+**No agregar navbar superior ni footer** — el sidebar es el único elemento de navegación.
+
+### Modelo Usuario extiende AbstractUser, NO ModeloBase
+
+**Decisión**: `seguridad.Usuario` hereda de `django.contrib.auth.models.AbstractUser` únicamente.
+
+**Por qué**:
+- `AbstractUser` ya provee `is_active`, `date_joined` y `last_login` — equivalentes a los campos de `ModeloBase`
+- Mezclar ambas clases genera conflictos en la herencia de Django
+- Es la única excepción a la regla de heredar `ModeloBase`
+
+**Todos los demás modelos** (Producto, Categoria, etc.) **sí deben heredar `ModeloBase`**.
+
+### Roles = Groups de Django
+
+**Decisión**: usar el modelo `django.contrib.auth.models.Group` como sistema de roles. No se crea un modelo `Rol` propio.
+
+**Por qué**:
+- Django ya tiene un sistema de grupos y permisos integrado y probado
+- Evita duplicar funcionalidad
+- Se muestra como "Roles" en la interfaz, pero en el código es `Group`
 
 ## 📚 Documentación adicional
 

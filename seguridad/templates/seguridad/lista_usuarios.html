@@ -1,0 +1,70 @@
+{% extends "core/base.html" %}
+
+{% block titulo %}Usuarios - Sistema Droguería{% endblock %}
+
+{% block contenido %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0 fw-semibold">Usuarios</h4>
+    <a href="{% url 'seguridad:crear_usuario' %}" class="btn btn-primary btn-sm d-flex align-items-center gap-2">
+        <i class="bi bi-plus-lg"></i> Nuevo usuario
+    </a>
+</div>
+
+{% if usuarios %}
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>Usuario</th>
+                    <th>Nombre completo</th>
+                    <th>Correo</th>
+                    <th>Roles</th>
+                    <th>Estado</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for usuario in usuarios %}
+                <tr>
+                    <td>{{ usuario.username }}</td>
+                    <td>{{ usuario.get_full_name|default:"—" }}</td>
+                    <td>{{ usuario.email|default:"—" }}</td>
+                    <td>
+                        {% for rol in usuario.groups.all %}
+                            <span class="badge bg-secondary">{{ rol.name }}</span>
+                        {% empty %}
+                            <span class="text-muted small">Sin rol</span>
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% if usuario.is_active %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle">Activo</span>
+                        {% else %}
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Inactivo</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <a href="{% url 'seguridad:editar_usuario' usuario.id %}" class="btn btn-sm btn-outline-primary me-1" title="Editar">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="{% url 'seguridad:eliminar_usuario' usuario.id %}" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="text-center py-5 text-muted">
+    <i class="bi bi-people fs-1 d-block mb-3 opacity-25"></i>
+    <p class="mb-3">No hay usuarios registrados.</p>
+    <a href="{% url 'seguridad:crear_usuario' %}" class="btn btn-primary btn-sm">Crear el primero</a>
+</div>
+{% endif %}
+
+{% endblock %}

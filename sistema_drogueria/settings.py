@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # Apps del proyecto
     'core',
+    'seguridad',
 ]
 
 MIDDLEWARE = [
@@ -95,3 +96,21 @@ USE_TZ = True
 
 # Archivos estaticos
 STATIC_URL = 'static/'
+
+# Modelo de usuario personalizado
+AUTH_USER_MODEL = 'seguridad.Usuario'
+
+# Autenticacion
+LOGIN_URL = '/seguridad/login/'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/seguridad/login/'
+
+# Mapeo de etiquetas de mensajes a clases de Bootstrap
+from django.contrib.messages import constants as messages_const
+MESSAGE_TAGS = {
+    messages_const.DEBUG: 'secondary',
+    messages_const.INFO: 'info',
+    messages_const.SUCCESS: 'success',
+    messages_const.WARNING: 'warning',
+    messages_const.ERROR: 'danger',
+}

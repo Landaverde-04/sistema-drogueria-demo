@@ -67,10 +67,10 @@
     {# Usuario y cierre de sesion #}
     <div class="px-3 py-3" style="border-top: 1px solid rgba(255,255,255,0.08);">
         {% if user.is_authenticated %}
-            <div class="d-flex align-items-center gap-2 mb-3 px-2">
-                <i class="bi bi-person-circle text-white opacity-75 fs-5"></i>
-                <span class="text-white small opacity-75">{{ user.username }}</span>
-            </div>
+            <a href="{% url 'seguridad:mi_perfil' %}" class="sidebar-link d-flex align-items-center gap-2 mb-3 px-2 py-2 rounded">
+                <i class="bi bi-person-circle fs-5"></i>
+                <span class="small">{{ user.username }}</span>
+            </a>
             <form method="post" action="{% url 'seguridad:logout' %}">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-sm w-100 d-flex align-items-center justify-content-center gap-2" style="background-color: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.12);">

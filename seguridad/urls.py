@@ -21,4 +21,8 @@ urlpatterns = [
     path('roles/<int:id>/editar/', views.editar_rol, name='editar_rol'),
     path('roles/<int:id>/eliminar/', views.eliminar_rol, name='eliminar_rol'),
     path('roles/<int:id>/usuarios/', views.usuarios_rol, name='usuarios_rol'),
+
+    # Perfil propio
+    path('mi-perfil/', views.mi_perfil, name='mi_perfil'),
+    path('mi-perfil/cambiar-password/', views.CambiarPasswordView.as_view(), name='cambiar_password'),
 ]

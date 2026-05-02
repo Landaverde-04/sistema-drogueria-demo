@@ -2,9 +2,12 @@ from itertools import groupby
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.views import PasswordChangeView
 from django.contrib.auth.models import Group, Permission
 from django.db.models import Count
 from django.contrib import messages
+from django.urls import reverse_lazy
 
 from .models import Usuario
 from .forms import UsuarioCrearForm, UsuarioEditarForm, RolForm, APPS_NEGOCIO
@@ -174,3 +177,22 @@ def usuarios_rol(request, id):
         'usuarios_con_rol': usuarios_con_rol,
         'usuarios_sin_rol': usuarios_sin_rol,
     })
+
+
+# --- Perfil propio ---
+
+@login_required
+def mi_perfil(request):
+    return render(request, 'seguridad/mi_perfil.html')
+
+
+class CambiarPasswordView(LoginRequiredMixin, PasswordChangeView):
+    template_name = 'seguridad/cambiar_password.html'
+    success_url = reverse_lazy('seguridad:mi_perfil')
+
+    def form_valid(self, form):
+        # cuando se agregue debe_cambiar_password:
+        # self.request.user.debe_cambiar_password = False
+        # self.request.user.save(update_fields=['debe_cambiar_password'])
+        messages.success(self.request, 'Contraseña actualizada correctamente.')
+        return super().form_valid(form)

@@ -26,15 +26,6 @@
         <div class="flex-grow-1 d-flex flex-column bg-light">
             <main class="flex-grow-1 p-4">
 
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-
                 {% block contenido %}{% endblock %}
 
             </main>
@@ -42,7 +33,72 @@
 
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc4s9bIOgUxi8T/jzmCBhBaAaUCdB0SuFmSR/iIbc5Gn" crossorigin="anonymous"></script>
+    {# Modal: mensajes del sistema (éxito, error, aviso, info) #}
+    {% if messages %}
+    <div class="modal fade" id="modalMensaje" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+            <div class="modal-content border-0 shadow overflow-hidden">
+                {% for message in messages %}{% if forloop.first %}
+                <div class="modal-header border-0
+                    {% if message.tags == 'success' %}bg-success text-white
+                    {% elif message.tags == 'danger' %}bg-danger text-white
+                    {% elif message.tags == 'warning' %}bg-warning text-dark
+                    {% else %}bg-primary text-white{% endif %}">
+                    <div class="d-flex align-items-center gap-2">
+                        {% if message.tags == 'success' %}
+                            <i class="bi bi-check-circle-fill fs-5"></i><span class="fw-semibold">Operación exitosa</span>
+                        {% elif message.tags == 'danger' %}
+                            <i class="bi bi-x-circle-fill fs-5"></i><span class="fw-semibold">Error</span>
+                        {% elif message.tags == 'warning' %}
+                            <i class="bi bi-exclamation-triangle-fill fs-5"></i><span class="fw-semibold">Advertencia</span>
+                        {% else %}
+                            <i class="bi bi-info-circle-fill fs-5"></i><span class="fw-semibold">Información</span>
+                        {% endif %}
+                    </div>
+                    <button type="button"
+                            class="btn-close {% if message.tags != 'warning' %}btn-close-white{% endif %}"
+                            data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body py-3 px-4">
+                    <p class="mb-0">{{ message }}</p>
+                </div>
+                <div class="modal-footer border-0 pt-0 pb-3">
+                    <button type="button" class="btn btn-secondary btn-sm px-4" data-bs-dismiss="modal">Aceptar</button>
+                </div>
+                {% endif %}{% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# Modal: confirmación de eliminación (compartido por todas las páginas) #}
+    <div class="modal fade" id="modalEliminar" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+            <div class="modal-content border-0 shadow overflow-hidden">
+                <div class="modal-header bg-danger text-white border-0">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-trash-fill fs-5"></i>
+                        <span class="fw-semibold" id="modal-eliminar-titulo">Eliminar</span>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body py-3 px-4">
+                    <p class="mb-1" id="modal-eliminar-pregunta"></p>
+                    <p class="mb-1 text-warning small" id="modal-eliminar-aviso" style="display: none;"></p>
+                    <small class="text-muted">Esta acción no se puede deshacer.</small>
+                </div>
+                <div class="modal-footer border-0 pt-0 pb-3">
+                    <form id="form-modal-eliminar" method="post">
+                        {% csrf_token %}
+                        <button type="button" class="btn btn-outline-secondary btn-sm me-1" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-danger btn-sm">Sí, eliminar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script src="{% static 'core/js/main.js' %}"></script>
 
     {% block scripts_extra %}{% endblock %}

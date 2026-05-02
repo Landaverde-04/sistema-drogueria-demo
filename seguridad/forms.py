@@ -1,7 +1,29 @@
 from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, Permission
 from django import forms
 from .models import Usuario
+
+
+APPS_NEGOCIO = ['seguridad', 'inventario']
+
+
+class RolForm(forms.ModelForm):
+    permissions = forms.ModelMultipleChoiceField(
+        queryset=Permission.objects.filter(
+            content_type__app_label__in=APPS_NEGOCIO
+        ).select_related('content_type').order_by('content_type__app_label', 'codename'),
+        required=False,
+        label='Permisos',
+        widget=forms.CheckboxSelectMultiple,
+    )
+
+    class Meta:
+        model = Group
+        fields = ('name', 'permissions')
+        labels = {'name': 'Nombre del rol'}
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Farmaceutico, Administrador'}),
+        }
 
 
 class UsuarioCrearForm(UserCreationForm):

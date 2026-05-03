@@ -10,7 +10,7 @@ from django.contrib import messages
 from django.urls import reverse_lazy
 
 from .models import Usuario
-from .forms import UsuarioCrearForm, UsuarioEditarForm, RolForm, APPS_NEGOCIO
+from .forms import UsuarioCrearForm, UsuarioEditarForm, RolForm, ResetearPasswordForm, APPS_NEGOCIO
 
 
 _ACCIONES_ES = {
@@ -56,7 +56,10 @@ def crear_usuario(request):
     if request.method == 'POST':
         form = UsuarioCrearForm(request.POST)
         if form.is_valid():
-            form.save()
+            usuario = form.save(commit=False)
+            usuario.debe_cambiar_password = True
+            usuario.save()
+            form.save_m2m()
             messages.success(request, 'Usuario creado correctamente.')
             return redirect('seguridad:lista_usuarios')
     else:
@@ -179,6 +182,29 @@ def usuarios_rol(request, id):
     })
 
 
+# --- Reseteo de contraseña por administrador ---
+
+@login_required
+@permission_required('seguridad.change_usuario', raise_exception=True)
+def resetear_password(request, id):
+    usuario = get_object_or_404(Usuario, pk=id)
+    if request.method == 'POST':
+        form = ResetearPasswordForm(request.POST)
+        if form.is_valid():
+            usuario.set_password(form.cleaned_data['password1'])
+            usuario.debe_cambiar_password = True
+            usuario.save()
+            messages.success(
+                request,
+                f'Contraseña de {usuario.username} restablecida. '
+                'El usuario deberá cambiarla en su próximo acceso.'
+            )
+            return redirect('seguridad:detalle_usuario', id=id)
+    else:
+        form = ResetearPasswordForm()
+    return render(request, 'seguridad/resetear_password.html', {'form': form, 'usuario': usuario})
+
+
 # --- Perfil propio ---
 
 @login_required
@@ -191,8 +217,7 @@ class CambiarPasswordView(LoginRequiredMixin, PasswordChangeView):
     success_url = reverse_lazy('seguridad:mi_perfil')
 
     def form_valid(self, form):
-        # cuando se agregue debe_cambiar_password:
-        # self.request.user.debe_cambiar_password = False
-        # self.request.user.save(update_fields=['debe_cambiar_password'])
+        self.request.user.debe_cambiar_password = False
+        self.request.user.save(update_fields=['debe_cambiar_password'])
         messages.success(self.request, 'Contraseña actualizada correctamente.')
         return super().form_valid(form)

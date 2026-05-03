@@ -1,5 +1,6 @@
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import Group, Permission
+from django.contrib.auth.password_validation import validate_password
 from django import forms
 from .models import Usuario
 
@@ -44,6 +45,24 @@ class UsuarioCrearForm(UserCreationForm):
             'email': 'Correo electrónico',
             'is_active': 'Usuario activo',
         }
+
+
+class ResetearPasswordForm(forms.Form):
+    password1 = forms.CharField(label='Nueva contraseña', widget=forms.PasswordInput)
+    password2 = forms.CharField(label='Confirmar contraseña', widget=forms.PasswordInput)
+
+    def clean_password1(self):
+        password1 = self.cleaned_data.get('password1')
+        validate_password(password1)
+        return password1
+
+    def clean(self):
+        cleaned_data = super().clean()
+        p1 = cleaned_data.get('password1')
+        p2 = cleaned_data.get('password2')
+        if p1 and p2 and p1 != p2:
+            raise forms.ValidationError('Las contraseñas no coinciden.')
+        return cleaned_data
 
 
 class UsuarioEditarForm(forms.ModelForm):

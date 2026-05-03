@@ -177,7 +177,12 @@ Completado:
 - [x] Buscador y ordenamiento por columnas en lista de usuarios (JS vanilla)
 
 Pendiente inmediato:
-- [ ] Cambio de contraseña
+- [ ] Agregar campo `debe_cambiar_password` al modelo Usuario (migración)
+- [ ] Pantalla "Mi Perfil"
+- [ ] Cambio de contraseña propia
+- [ ] Reseteo de contraseña por admin
+- [ ] Middleware para forzar cambio de contraseña
+- [ ] Extraer plantilla `plantilla_django` antes de empezar inventario
 - [ ] Crear app `inventario`
 
 Pendiente de mediano plazo:
@@ -398,6 +403,33 @@ Permission.objects.filter(content_type__app_label__in=APPS_NEGOCIO)
 **Por qué**: jsDelivr puede actualizar el contenido de un archivo sin cambiar su versión (raro pero ocurrió con `bootstrap@5.3.3`). Si el hash no coincide, el browser bloquea el script silenciosamente — aparece como `Failed to find a valid digest in the 'integrity' attribute` en la consola.
 
 **Si Bootstrap JS deja de funcionar**, verificar en DevTools → Network si el script tiene error de integridad y actualizar el hash en `base.html`.
+
+### Modelo Usuario tiene flag `debe_cambiar_password`
+
+**Decisión**: el modelo `Usuario` incluye un campo `debe_cambiar_password` (BooleanField, default False) que se pone en True cuando un admin resetea la contraseña o cuando se crea un usuario nuevo.
+
+**Por qué**:
+- Forzar al usuario a establecer su propia contraseña después del reseteo
+- Evitar que el admin conozca la contraseña final del usuario
+- Buena práctica de seguridad estándar
+
+### Middleware ForzarCambioPasswordMiddleware
+
+**Decisión**: existe un middleware en `seguridad/middleware.py` que intercepta cada request. Si el usuario está logueado y tiene `debe_cambiar_password=True`, lo redirige a la vista de cambio de contraseña.
+
+**Excepciones permitidas** (no redirige):
+- URL de cambio de contraseña (sino loop)
+- URL de logout (para que pueda salir si quiere)
+- Archivos estáticos
+- Admin de Django
+
+**Posición en MIDDLEWARE**: debe ir después de `AuthenticationMiddleware` porque necesita `request.user` ya cargado.
+
+### Pantalla "Mi Perfil" como hub del usuario
+
+**Decisión**: existe una pantalla `/seguridad/mi-perfil/` que sirve como punto central para que el usuario vea sus datos y acceda a acciones relacionadas con su cuenta (cambio de contraseña por ahora; foto de perfil, preferencias, sesiones activas en el futuro).
+
+**No agregar opciones de cuenta directamente al sidebar** — todo lo relacionado a la cuenta del usuario va dentro de "Mi Perfil".
 
 ## 📚 Documentación adicional
 

@@ -52,6 +52,7 @@
                     <th class="col-sort" data-sort="4">
                         Estado <i class="bi bi-arrow-down-up sort-icon ms-1 opacity-50"></i>
                     </th>
+                    <th>Último acceso</th>
                     <th></th>
                 </tr>
             </thead>
@@ -78,6 +79,9 @@
                         {% else %}
                             <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Inactivo</span>
                         {% endif %}
+                    </td>
+                    <td class="text-muted small">
+                        {{ usuario.last_login|date:"d/m/Y H:i"|default:"—" }}
                     </td>
                     <td class="text-end">
                         {% if perms.seguridad.change_usuario %}

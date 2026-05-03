@@ -43,8 +43,10 @@ Base técnica del sistema. Contiene:
 - `base.html` que todas las páginas heredan con `{% extends "core/base.html" %}`
 - `ModeloBase` — modelo abstracto con `fecha_creacion`, `fecha_modificacion`, `activo`
 - Vista y URL del home
-- Parciales `navbar.html` y `footer.html`
+- Parcial `sidebar.html` (el footer fue eliminado)
 - Archivos estáticos base: `estilos.css` y `main.js`
+- Modal de mensajes del sistema (`#modalMensaje`) — se activa automáticamente cuando Django envía un mensaje
+- Modal de confirmación de eliminación (`#modalEliminar`) — compartido por todas las páginas, controlado desde `main.js`
 
 ### App `seguridad`
 Gestión de acceso al sistema:
@@ -166,16 +168,25 @@ Completado:
 - [x] App `seguridad` creada y registrada
 - [x] Modelo `Usuario` con `AbstractUser` + `AUTH_USER_MODEL` configurado
 - [x] Login y logout implementados
-- [x] CRUD de usuarios completo (lista, crear, editar, eliminar)
+- [x] CRUD de usuarios completo (lista, crear, editar, eliminar, detalle)
+- [x] CRUD de roles completo (lista, crear, editar, eliminar, gestión de usuarios por rol)
+- [x] Protección de vistas con `@login_required` + `@permission_required`
+- [x] Control de permisos en templates con `{% if perms.app.codename %}`
+- [x] Sistema de modales: confirmación de eliminación y mensajes del sistema
+- [x] CSS y JS separados en archivos estáticos por app (no inline en HTML)
+- [x] Buscador y ordenamiento por columnas en lista de usuarios (JS vanilla)
 
 Pendiente inmediato:
-- [ ] CRUD de roles (`Group` de Django)
-- [ ] Cambio de contraseña
+- [ ] Agregar campo `debe_cambiar_password` al modelo Usuario (migración)
+- [ ] Pantalla "Mi Perfil"
+- [ ] Cambio de contraseña propia
+- [ ] Reseteo de contraseña por admin
+- [ ] Middleware para forzar cambio de contraseña
+- [ ] Extraer plantilla `plantilla_django` antes de empezar inventario
 - [ ] Crear app `inventario`
 
 Pendiente de mediano plazo:
 - [ ] Implementar CRUD en `inventario` (productos y categorías)
-- [ ] Control de permisos por rol en las vistas
 
 ## ⚠️ Decisiones técnicas importantes
 
@@ -337,6 +348,88 @@ class Producto(ModeloBase):
 - Django ya tiene un sistema de grupos y permisos integrado y probado
 - Evita duplicar funcionalidad
 - Se muestra como "Roles" en la interfaz, pero en el código es `Group`
+
+### Protección de vistas: doble decorador obligatorio
+
+**Decisión**: toda vista protegida usa `@login_required` seguido de `@permission_required(raise_exception=True)`, siempre en ese orden.
+
+**Por qué**:
+- `@login_required` va primero (decorador externo): si el usuario no está autenticado, redirige al login
+- `@permission_required` va segundo (decorador interno): si no tiene el permiso, lanza 403
+- Si se invierte el orden, un usuario no autenticado recibe 403 en lugar de ser redirigido al login
+
+```python
+@login_required
+@permission_required('seguridad.view_usuario', raise_exception=True)
+def lista_usuarios(request):
+    ...
+```
+
+**Nunca usar `@permission_required` sin `@login_required` encima.**
+
+### Permisos filtrados por apps del negocio
+
+**Decisión**: al asignar permisos a roles, solo se muestran los permisos de las apps `seguridad` e `inventario`. Los permisos de Django interno (auth, admin, contenttypes, etc.) se excluyen.
+
+**Por qué**: los permisos de Django internos no son relevantes para el negocio y confundirían al usuario.
+
+```python
+APPS_NEGOCIO = ['seguridad', 'inventario']
+Permission.objects.filter(content_type__app_label__in=APPS_NEGOCIO)
+```
+
+### Modales controlados con JS vanilla, sin depender de Bootstrap JS
+
+**Decisión**: los modales de `base.html` se controlan manipulando clases y estilos directamente desde `main.js`, sin llamar a `bootstrap.Modal` ni a ninguna función de Bootstrap JS.
+
+**Por qué**:
+- jsDelivr puede devolver un archivo cuyo hash difiere del atributo `integrity` del `<script>` — el browser bloquea el script por SRI y `bootstrap` queda como `undefined`
+- El CSS de Bootstrap sí carga correctamente, así que el estilo visual del modal funciona
+- Controlar el modal con JS vanilla (`el.classList.add('show')`, backdrop manual) es suficiente y elimina la dependencia
+
+**Cómo funciona**:
+- Los botones de eliminar tienen `data-accion="eliminar"` con los datos necesarios
+- `main.js` escucha clicks con `event.target.closest('[data-accion="eliminar"]')` y llama a `mostrarModal(el)`
+- `mostrarModal` agrega `display: block`, clase `show`, `modal-open` al body, y crea el backdrop
+- `ocultarModal` revierte todo y elimina el backdrop del DOM
+- Los botones con `data-bs-dismiss="modal"` son interceptados por el mismo `main.js`
+
+**No agregar lógica de modales que dependa de `bootstrap.Modal`.**
+
+### SRI en CDN de Bootstrap
+
+**Decisión**: el atributo `integrity` en los tags de Bootstrap CDN debe mantenerse actualizado con el hash real del archivo servido.
+
+**Por qué**: jsDelivr puede actualizar el contenido de un archivo sin cambiar su versión (raro pero ocurrió con `bootstrap@5.3.3`). Si el hash no coincide, el browser bloquea el script silenciosamente — aparece como `Failed to find a valid digest in the 'integrity' attribute` en la consola.
+
+**Si Bootstrap JS deja de funcionar**, verificar en DevTools → Network si el script tiene error de integridad y actualizar el hash en `base.html`.
+
+### Modelo Usuario tiene flag `debe_cambiar_password`
+
+**Decisión**: el modelo `Usuario` incluye un campo `debe_cambiar_password` (BooleanField, default False) que se pone en True cuando un admin resetea la contraseña o cuando se crea un usuario nuevo.
+
+**Por qué**:
+- Forzar al usuario a establecer su propia contraseña después del reseteo
+- Evitar que el admin conozca la contraseña final del usuario
+- Buena práctica de seguridad estándar
+
+### Middleware ForzarCambioPasswordMiddleware
+
+**Decisión**: existe un middleware en `seguridad/middleware.py` que intercepta cada request. Si el usuario está logueado y tiene `debe_cambiar_password=True`, lo redirige a la vista de cambio de contraseña.
+
+**Excepciones permitidas** (no redirige):
+- URL de cambio de contraseña (sino loop)
+- URL de logout (para que pueda salir si quiere)
+- Archivos estáticos
+- Admin de Django
+
+**Posición en MIDDLEWARE**: debe ir después de `AuthenticationMiddleware` porque necesita `request.user` ya cargado.
+
+### Pantalla "Mi Perfil" como hub del usuario
+
+**Decisión**: existe una pantalla `/seguridad/mi-perfil/` que sirve como punto central para que el usuario vea sus datos y acceda a acciones relacionadas con su cuenta (cambio de contraseña por ahora; foto de perfil, preferencias, sesiones activas en el futuro).
+
+**No agregar opciones de cuenta directamente al sidebar** — todo lo relacionado a la cuenta del usuario va dentro de "Mi Perfil".
 
 ## 📚 Documentación adicional
 

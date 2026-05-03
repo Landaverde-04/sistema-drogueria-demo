@@ -11,6 +11,8 @@ class Usuario(AbstractUser):
     No hereda ModeloBase porque AbstractUser ya cubre esos campos.
     """
 
+    debe_cambiar_password = models.BooleanField(default=False)
+
     class Meta:
         verbose_name = 'usuario'
         verbose_name_plural = 'usuarios'
